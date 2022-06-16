@@ -10,7 +10,7 @@ function initTextures() {
     createTexture("dirtblock", "assets/images/tiles/tile_dirtblock.png");
     createTexture("stoneblock", "assets/images/tiles/tile_stoneblock.png");
     createTexture("oaklogblock", "assets/images/tiles/tile_oaklogblock.png");
-    createTexture("oaklogblock", "assets/images/tiles/tile_bedrockblock.png");
+    createTexture("bedrockblock", "assets/images/tiles/tile_bedrockblock.png");
     //Detail textures
     createTexture("grass_a1", "assets/images/detail/detail_grass_a1.png");
     createTexture("grass_a2", "assets/images/detail/detail_grass_a2.png");

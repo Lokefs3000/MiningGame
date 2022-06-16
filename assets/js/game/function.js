@@ -20,21 +20,26 @@ function createBlock(x, y, width, height, texId, animation) {
         texId: texId,
         collision: true,
         solid: true,
-        visible: true,
         id: 0,
         animation: animation,
+        affectedByCamera: true,
 
         //Apply the block rendering settings to the current rendering context
-        applyData: function(ctx) {
+        applyData: function(ctx, offsetx, offsety) {
             //Set the texture to the current animation texture if it exists
             if (this.animation != null) {
                 this.texId = this.animation.getCurrentTexture();
             }
 
+            if (!this.affectedByCamera) {
+                offsetx = 0;
+                offsety = 0;
+            }
+
             ctx.drawImage(
                 getDataImageFromTextureId(this.texId).img,
-                this.x,
-                this.y,
+                this.x + offsetx,
+                this.y + offsety,
                 this.width * gameDividedScalingX,
                 this.height * gameDividedScalingY
                 );
@@ -68,11 +73,23 @@ function createText(x, y, text, font, color, size) {
         color: color,
         size: size,
         id: 1,
+        affectedByCamera: true,
 
         //Apply the text rendering settings to the current rendering context
-        applyData: function(ctx) {
+        applyData: function(ctx, offsetx, offsety) {
             ctx.font = this.size + "px " + this.font;
             ctx.fillStyle = this.color;
+
+            if (!this.affectedByCamera) {
+                offsetx = 0;
+                offsety = 0;
+            }
+
+            ctx.fillText(
+                this.text,
+                this.x + offsetx,
+                this.y + offsety
+                );
         }
     }
 }
@@ -99,6 +116,25 @@ function getTextureIdFromTextureName(filename) {
 
     //If the texture was not found, then return 0
     return 0;
+}
+
+function moveUntilOutOfBlock() {
+    for (let u = 0; u < 200000; u++) {
+        for (let j = 0; j < blocksToRecalculateAfter.length; j++) {
+            const object = blocksToRecalculateAfter[j];
+            
+            HasHitBlock = rectIntersect(playerBlock.x + 2.5, playerBlock.y + 2.5, playerBlock.width - 5, playerBlock.height - 5, object.x + camx, object.y + camy, object.width, object.height) == true;
+
+            camy += 0.0001;
+
+            if (!HasHitBlock) {
+                camy -= 0.0002;
+                break;
+            }
+        }
+    }
+
+    hasMovedOutOfBlock = true;
 }
 
 function createTexture(filename, flocation) {
@@ -177,7 +213,7 @@ function generateTerrainCollumn(x, y, height) {
     if (isNaN(height))
         height = 1;
 
-    for (var i = 0; i < height; i++) {
+    for (var i = 0; i < height + 1; i++) {
         var id = 0;
 
         if (i == 0)
@@ -186,12 +222,27 @@ function generateTerrainCollumn(x, y, height) {
             id = getTextureIdFromTextureName("dirtblock");
         else if (i >= 4)
             id = getTextureIdFromTextureName("stoneblock");
-        if (i == height - 1)
-            id = getDataImageFromTextureId("bedrockblock");
+        if (i+1 > height - 1)
+            id = getTextureIdFromTextureName("bedrockblock");
 
         //Create the block and add it to the rendering list
         var newBlock = createBlock(x, y + (i * 80), 80, 80, id, null);
-        renderingList.push(newBlock)
+        renderingList.push(newBlock);
+    }
+}
+
+function removeData(data) {
+    //Check if any variable is undefined and set it to 0 if so
+    if (isNaN(data))
+        data = 0;
+
+    //Loop through the rendering list
+    for (var i = 0; i < renderingList.length; i++) {
+        //If the data id matches the data id, then remove the data
+        if (renderingList[i] == data) {
+            renderingList.splice(i, 1);
+            i--;
+        }
     }
 }
 
@@ -208,6 +259,63 @@ function getAnimationFromName(name) {
 
     //If the animation was not found, then return null
     return null;
+}
+
+function IsVisible(data, canvas) {
+    //Check if any variable is undefined and set it to 0 if so
+    if (isNaN(data.x))
+        data.x = 0;
+    if (isNaN(data.y))
+        data.y = 0;
+    if (isNaN(data.width))
+        data.width = 1;
+    if (isNaN(data.height))
+        data.height = 1;
+
+    //Check if the block is within the viewport
+    //Horizontal
+    if (data.x + camx > canvas.width || data.x + camx < -data.width)
+        return false;
+    //Vertical
+    if (data.y + camy > canvas.height || data.y + camy < -data.height)
+        return false;
+
+    return true;
+}
+
+function clamp(value, min, max) {
+    //Check if any variable is undefined and set it to 0 if so
+    if (isNaN(value))
+        value = 0;
+    if (isNaN(min))
+        min = 0;
+    if (isNaN(max))
+        max = 0;
+
+    //Return the clamped value
+    return Math.max(min, Math.min(value, max));
+}
+
+function IsVisibleXY(x, y, width, height, canvas) {
+    //Check if any variable is undefined and set it to 0 if so
+    if (isNaN(x))
+        x = 0;
+    if (isNaN(y))
+        y = 0;
+    if (isNaN(width))
+        width = 1;
+    if (isNaN(height))
+        height = 1;
+
+    //Check if the block is within the viewport
+    //Horizontal
+    if (x + camx > canvas.width || x + camx < -width)
+        return false;
+    //Vertical
+    if (y + camy > canvas.height || y + camy < -height)
+        return false;
+
+    return true;
 }
 
 //Debugging functions
